@@ -11,7 +11,7 @@ Installation:
 
 Clone the repository:
 
-git clone https://github.com/your-username/media-processing-service.git
+git clone https://github.com/Kapil64bit/media-processing-service.git
 Use code with caution.
 
 Install dependencies:
