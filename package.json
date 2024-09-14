@@ -1,0 +1,43 @@
+{
+  "dependencies": {
+    "aws-sdk": "^2.1691.0",
+    "axios": "^1.7.7",
+    "body-parser": "^1.20.3",
+    "csv-parse": "^5.5.6",
+    "csv-writer": "^1.6.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.20.0",
+    "fs": "^0.0.1-security",
+    "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.1.4",
+    "sharp": "^0.33.5",
+    "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "@types/aws-sdk": "^0.0.42",
+    "@types/csv-parse": "^1.1.12",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.5.4",
+    "@types/sharp": "^0.31.1",
+    "@types/uuid": "^10.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  },
+  "name": "media-processing-service",
+  "version": "1.0.0",
+  "description": "Description:",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "precommit": "lint && test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
