@@ -24,3 +24,8 @@ export const parseCSV = (fileBuffer: Buffer): Promise<any[]> => {
       });
   });
 };
+
+
+export const processUploadCsv = async(csvBuffer:Buffer,Urls:String,requestId:string)=>{
+
+}

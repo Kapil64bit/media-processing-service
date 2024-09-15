@@ -1,5 +1,4 @@
 import AWS from 'aws-sdk'
-import {getProcessingStatus} from '../models/dynamo';
 require('dotenv').config();
 
 // import { triggerWebhook } from './webhookService';

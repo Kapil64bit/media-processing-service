@@ -1,10 +1,13 @@
 import AWS from 'aws-sdk';
 import { dynamoDbClient } from '../config/awsConfig';
 import { v4 as uuidv4 } from 'uuid';
+
+const S3 = new AWS.S3();
 require('dotenv').config();
 
-export const storeProductData = async (requestId: string, rowsJson: any[]) => {
+export const storeProductData = async (requestId: string, rowsJson: any[],fileBuffer:Buffer) => {
   try {
+    const bucket = process.env.S3_BUCKET!;
     const productIds = await Promise.all(rowsJson.map(async (item: any) => {
       try {
         const productName: string = item['Product Name'];
@@ -14,10 +17,15 @@ export const storeProductData = async (requestId: string, rowsJson: any[]) => {
 
         console.log('imageUrls before saving:', imageUrls);
 
+
+
+
+
         const res = await dynamoDbClient.put({
           TableName: process.env.DYNAMODB_TABLE!,
           Item: {
             requestId,
+            csvFileBuffer:fileBuffer,
             serialNumber:item['Serial Number'],
             productId,
             productName,
@@ -48,15 +56,26 @@ export const storeProductData = async (requestId: string, rowsJson: any[]) => {
 // Update the processed image URL
 export const updateImageUrls = async (requestId: string, productId: string, compressedImageUrls: string[]): Promise<void> => {
   try {
-    await dynamoDbClient.update({
+    console.log('inside updateImageUrls');
+
+    // First, query to check if the item exists with both requestId and productId
+    const updateParams = {
       TableName: process.env.DYNAMODB_TABLE!,
-      Key: { requestId, productId },
-      UpdateExpression: 'SET processedImageUrls = list_append(if_not_exists(processedImageUrls, :emptyList), :newUrls)',
-      ExpressionAttributeValues: {
-        ':newUrls': compressedImageUrls,
-        ':emptyList': [],
+      Key: {
+        requestId,
+        productId
       },
-    }).promise();
+      UpdateExpression: "SET processedImageUrls = :urls",
+      ExpressionAttributeValues: {
+        ':urls': compressedImageUrls
+      },
+      ReturnValues: "ALL_NEW" // This ensures the updated document is returned
+    };
+    
+    const queryResult = await dynamoDbClient.update(updateParams).promise();
+    console.log('after update',queryResult)
+
+
   } catch (error: any) {
     console.error('Error updating image URLs:', error);
     throw new Error(`Failed to update image URLs: ${error.message}`);
