@@ -4,8 +4,10 @@ require('dotenv').config();
 import './config/awsConfig';
 import bodyParser from 'body-parser';
 import { swaggerSpec, swaggerUi, swaggerUiOptions } from './config/swagger';
+import cors from 'cors';
 
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 
 app.use((req, res, next) => {
