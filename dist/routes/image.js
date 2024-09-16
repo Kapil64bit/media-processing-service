@@ -27,6 +27,22 @@ const router = (0, express_1.Router)();
  *         description: File uploaded successfully
  */
 router.post('/media', multer_1.default.single('file'), media_1.uploadData);
+/**
+ * @swagger
+ * /{requestId}:
+ *   get:
+ *     summary: Get status of a request
+ *     parameters:
+ *       - in: path
+ *         name: requestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Status retrieved successfully
+ */
+router.get('/:requestId', media_1.getStatus);
 router.post('/image', media_1.imageProcessor);
 /**
  * @swagger
