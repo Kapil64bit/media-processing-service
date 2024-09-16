@@ -3,6 +3,7 @@ import router from './routes/image';
 require('dotenv').config();
 import './config/awsConfig';
 import bodyParser from 'body-parser';
+import { swaggerSpec, swaggerUi, swaggerUiOptions } from './config/swagger';
 
 const app = express();
 app.use(bodyParser.json());
@@ -12,6 +13,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 app.use('/',router)
 
