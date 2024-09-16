@@ -111,67 +111,70 @@ const getCsvFile = async (req, res) => {
         const csvUrl = `https://${bucket}.s3.amazonaws.com/${key}`;
         const paramS3 = {
             Bucket: bucket,
-            Prefix: key, // File path in S3
+            Key: key, // File path in S3
         };
-        // This will throw an error if the file does not exist
-        const fileExists = await S3.listObjectsV2(paramS3).promise();
-        console.log(fileExists);
-        if (fileExists) {
+        // Check if the file exists
+        S3.headObject(paramS3).promise()
+            .then(() => {
             console.log('CSV already exists');
             res.status(200).json({
                 success: true,
                 csvUrl: csvUrl
             });
             return; // Skip further execution if the file exists
-        }
-        const params = {
-            TableName: process.env.DYNAMODB_TABLE,
-            KeyConditionExpression: '#requestId = :requestId',
-            ExpressionAttributeNames: {
-                '#requestId': 'requestId'
-            },
-            ExpressionAttributeValues: {
-                ':requestId': requestId
+        })
+            .catch(async (error) => {
+            if (error.code === 'NotFound') {
+                const params = {
+                    TableName: process.env.DYNAMODB_TABLE,
+                    KeyConditionExpression: '#requestId = :requestId',
+                    ExpressionAttributeNames: {
+                        '#requestId': 'requestId'
+                    },
+                    ExpressionAttributeValues: {
+                        ':requestId': requestId
+                    }
+                };
+                const result = await dynamoDB.query(params).promise();
+                if (!result.Items || result.Items.length === 0) {
+                    res.status(404).json({
+                        success: false,
+                        message: 'No data found for the given requestId'
+                    });
+                    return;
+                }
+                const csvString = Buffer.from(result.Items[0].csvFileBuffer);
+                console.log(csvString);
+                // Process each item
+                const parsedCsv = (0, sync_1.parse)(csvString);
+                parsedCsv[0].push('Output Image Urls');
+                for (let i = 1, j = 0; i < parsedCsv.length; i++) {
+                    const urlString = result.Items[j].processedImageUrls.join(',');
+                    console.log('urlstrings', urlString);
+                    parsedCsv[i].push(urlString);
+                }
+                const csvStringforBuffer = parsedCsv
+                    .map((innerArray) => innerArray
+                    .map((item) => `"${item.replace(/"/g, '""')}"`)
+                    .join(','))
+                    .join('\n');
+                console.log(csvString);
+                const csvBuffer = Buffer.from(csvStringforBuffer);
+                console.log('here by chance', csvStringforBuffer, 'and buffer of parcedCsv', csvBuffer);
+                // Upload to S3
+                const s3Params = {
+                    Bucket: bucket,
+                    Key: key,
+                    Body: csvBuffer,
+                    ContentType: 'text/csv'
+                };
+                await S3.putObject(s3Params).promise();
+                // Generate S3 URL
+                res.status(200).json({
+                    success: true,
+                    csvUrl: csvUrl
+                });
             }
-        };
-        const result = await dynamoDB.query(params).promise();
-        if (!result.Items || result.Items.length === 0) {
-            res.status(404).json({
-                success: false,
-                message: 'No data found for the given requestId'
-            });
-            return;
-        }
-        const csvString = Buffer.from(result.Items[0].csvFileBuffer);
-        console.log(csvString);
-        // Process each item
-        const parsedCsv = (0, sync_1.parse)(csvString);
-        parsedCsv[0].push('Output Image Urls');
-        for (let i = 1, j = 0; i < parsedCsv.length; i++) {
-            const urlString = result.Items[j].processedImageUrls.join(',');
-            console.log('urlstrings', urlString);
-            parsedCsv[i].push(urlString);
-        }
-        const csvStringforBuffer = parsedCsv
-            .map((innerArray) => innerArray
-            .map((item) => `"${item.replace(/"/g, '""')}"`)
-            .join(','))
-            .join('\n');
-        console.log(csvString);
-        const csvBuffer = Buffer.from(csvStringforBuffer);
-        console.log('here by chance', csvStringforBuffer, 'and buffer of parcedCsv', csvBuffer);
-        // Upload to S3
-        const s3Params = {
-            Bucket: bucket,
-            Key: key,
-            Body: csvBuffer,
-            ContentType: 'text/csv'
-        };
-        await S3.putObject(s3Params).promise();
-        // Generate S3 URL
-        res.status(200).json({
-            success: true,
-            csvUrl: csvUrl
         });
     }
     catch (error) {
