@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {getProcessingStatus} from '../models/dynamo';
 import { processImage } from '../services/image';
 import AWS from 'aws-sdk';
+import { json } from 'body-parser';
 require('dotenv').config();
 
 
@@ -53,10 +54,47 @@ console.log('before ---------========',rowsJson)
 
 // Status API to track image processing progress
 export const getStatus = async (req: Request, res: Response): Promise<void> => {
-  const requestId = req.params.requestId;
-  const data = await getProcessingStatus(requestId);
-  res.status(200).json(data);
+  try {
+    const requestId = req.params.requestId;
+    let result = true;
+
+    // Assuming getProcessingStatus fetches the DynamoDB data
+    const data = await getProcessingStatus(requestId);
+
+    // Convert data to a standard JSON format if needed
+    const jsonData: any = JSON.parse(JSON.stringify(data));
+    console.log(jsonData);
+
+    // Iterate over the items in the result array
+    for (const item of jsonData.Items) {
+      // Check if the image processing is complete
+      if (item.isComplete !== true) {
+        console.log('Processing not complete for item:', item);
+        result = false;
+        break;
+      }
+    }
+
+    console.log('Processing result:', result);
+
+    const message = result
+      ? 'Images compressed and processed successfully'
+      : 'Compression of images is still running';
+
+    // Send response
+    res.status(200).json({
+      status: true,
+      message // Fixed typo from "massage" to "message"
+    });
+  } catch (error) {
+    console.error('Error in getStatus:', error);
+    res.status(500).json({
+      status: false,
+      message: 'An error occurred while checking the processing status'
+    });
+  }
 };
+
 
 export const imageProcessor = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -101,19 +139,20 @@ export const getCsvFile = async (req: Request, res: Response): Promise<void> => 
 
     const paramS3 = {
       Bucket: bucket,
-      Key: key, // File path in S3
+      Prefix: key, // File path in S3
     };
           // This will throw an error if the file does not exist
-    const exist= await S3.headObject(paramS3).promise();
-    if(exist){
-      console.log('csv already Exists')
-       res.status(200).json({
-        success: true,
-        csvUrl: csvUrl
-      });
-
-        return;
-    }
+          const fileExists = await S3.listObjectsV2(paramS3).promise();
+        
+      console.log(fileExists)
+          if (fileExists) {
+            console.log('CSV already exists');
+            res.status(200).json({
+              success: true,
+              csvUrl: csvUrl
+            });
+            return; // Skip further execution if the file exists
+          }
 
     const params = {
       TableName: process.env.DYNAMODB_TABLE!,

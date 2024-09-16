@@ -30,7 +30,7 @@ export const storeProductData = async (requestId: string, rowsJson: any[],fileBu
             productId,
             productName,
             imageUrl: imageUrls,
-            status: false,
+            isComplete:false,
             processedImageUrls: [],
           },
         }).promise();
@@ -65,12 +65,15 @@ export const updateImageUrls = async (requestId: string, productId: string, comp
         requestId,
         productId
       },
-      UpdateExpression: "SET processedImageUrls = :urls",
+      // Update both 'processedImageUrls' and 'status'
+      UpdateExpression: "SET processedImageUrls = :urls, isComplete = :isComplete",
       ExpressionAttributeValues: {
-        ':urls': compressedImageUrls
+        ':urls': compressedImageUrls,
+        ':isComplete': true // Setting 'status' to true
       },
-      ReturnValues: "ALL_NEW" // This ensures the updated document is returned
+      ReturnValues: "ALL_NEW" // Return the updated document
     };
+    
     
     const queryResult = await dynamoDbClient.update(updateParams).promise();
     console.log('after update',queryResult)
