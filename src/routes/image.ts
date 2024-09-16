@@ -25,6 +25,24 @@ const router = Router();
  */
 router.post('/media', multerConfig.single('file'), uploadData);
 
+/**
+ * @swagger
+ * /{requestId}:
+ *   get:
+ *     summary: Get status of a request
+ *     parameters:
+ *       - in: path
+ *         name: requestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Status retrieved successfully
+ */
+router.get('/:requestId', getStatus);
+
+
 router.post('/image', imageProcessor);
 
 /**
